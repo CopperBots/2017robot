@@ -50,8 +50,10 @@ public class Robot extends IterativeRobot {
 	private static final int SHOOTER_SMOOTHING = 1;
 
 	private static final int CLIMB_CLIMB_TALON_PWM = 2;
-	private static int cam1;
-	private static int cam2;
+	
+	//usb camera code from here on is commented out
+	//private static int cam1;
+	//private static int cam2;
 
 	private double PERCENT_SHOOT_SPEED = 0.1;
 
@@ -102,10 +104,10 @@ public class Robot extends IterativeRobot {
 
 	private PowerDistributionPanel PDP;
 
-	private CameraServer camera;
-	private CameraServer server;
-	private UsbCamera Cameron;
-	private UsbCamera Cameron2;
+	//private CameraServer camera;
+	//private CameraServer server;
+	//private UsbCamera Cameron;
+	//private UsbCamera Cameron2;
 	// private Encoder frontLeftEncoder;
 	// private Encoder frontRightEncoder;
 	// private Encoder rearLeftEncoder;
@@ -137,6 +139,8 @@ public class Robot extends IterativeRobot {
 	private int samplesSinceCal = 0;
 	private long lastTime = 0;
 	private double gravAngle = 0;
+	
+	
 
 	public void robotInit() {
 
@@ -151,10 +155,13 @@ public class Robot extends IterativeRobot {
 		frontRightDrive.setInverted(true);
 		rearRightDrive.setInverted(true);
 
-		camera = CameraServer.getInstance();
+		/*
+		CameraServer camera = CameraServer.getInstance();
+		
 		camera.startAutomaticCapture(cam1);
-	//	server = CameraServer.getInstance();
-	//	server.startAutomaticCapture(cam2);
+		server = CameraServer.getInstance();
+		server.startAutomaticCapture(cam2);
+		*/
 		
 		// push to turn on gearPickUp; release to stop
 
