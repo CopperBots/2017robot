@@ -8,6 +8,7 @@ import com.analog.adis16448.frc.ADIS16448_IMU;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Counter;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.GenericHID.Hand;
@@ -25,6 +26,7 @@ import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.SPI;
@@ -50,10 +52,9 @@ public class Robot extends IterativeRobot {
 	private static final int SHOOTER_SMOOTHING = 1;
 
 	private static final int CLIMB_CLIMB_TALON_PWM = 2;
-	
-	//usb camera code from here on is commented out
-	//private static int cam1;
-	//private static int cam2;
+
+	private static int cam1 = 0;
+	//private static int cam2 = 0;
 
 	private double PERCENT_SHOOT_SPEED = 0.1;
 
@@ -68,6 +69,11 @@ public class Robot extends IterativeRobot {
 
 	private static final String USB_CAMERA_NAME = "";
 	private static final String USB_CAMERA_NAME_0 = "";
+	
+	private static final int GYRO_PWM = 6;
+	
+	//!!! I think 5 is the wrong port !!!
+	//private static final int GEAR_LIMIT_SWITCH_PWM = 5;
 
 	// CANTalon refrence numbers
 	private static final int FL = 3;
@@ -104,10 +110,14 @@ public class Robot extends IterativeRobot {
 
 	private PowerDistributionPanel PDP;
 
-	//private CameraServer camera;
-	//private CameraServer server;
-	//private UsbCamera Cameron;
-	//private UsbCamera Cameron2;
+	private Gyro gyro;
+
+	//private DigitalInput gearLimitSwitch;
+	
+	private CameraServer camera;
+	// private CameraServer server;
+	// private UsbCamera Cameron;
+	// private UsbCamera Cameron2;
 	// private Encoder frontLeftEncoder;
 	// private Encoder frontRightEncoder;
 	// private Encoder rearLeftEncoder;
@@ -139,8 +149,6 @@ public class Robot extends IterativeRobot {
 	private int samplesSinceCal = 0;
 	private long lastTime = 0;
 	private double gravAngle = 0;
-	
-	
 
 	public void robotInit() {
 
@@ -155,14 +163,12 @@ public class Robot extends IterativeRobot {
 		frontRightDrive.setInverted(true);
 		rearRightDrive.setInverted(true);
 
-		/*
+		
 		CameraServer camera = CameraServer.getInstance();
-		
+		 
 		camera.startAutomaticCapture(cam1);
-		server = CameraServer.getInstance();
-		server.startAutomaticCapture(cam2);
-		*/
-		
+		 
+
 		// push to turn on gearPickUp; release to stop
 
 		gearPickUp = new Talon(IN_TAKE_TALON_PWM);
@@ -192,6 +198,8 @@ public class Robot extends IterativeRobot {
 
 		imu = new ADIS16448_IMU();
 
+		//gearLimitSwitch = new DigitalInput(GEAR_LIMIT_SWITCH_PWM);
+		
 		// frontLeftEncoder = new Encoder(FRONT_LEFT_ENCODER_PWM, 0);
 		// frontRightEncoder = new Encoder(FRONT_RIGHT_ENCODER_PWM, 1);
 		// rearRightEncoder = new Encoder(REAR_RIGHT_ENCODER_PWM, 2);
@@ -207,12 +215,14 @@ public class Robot extends IterativeRobot {
 		autoSelect = new SendableChooser();
 		autoSelect.addDefault("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
-		autoSelect.addObject("Gear Drop", new GearDrop(frontRightDrive, frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
+		autoSelect.addObject("Gear Drop", new GearDrop(frontRightDrive,
+				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
 
 		SmartDashboard.putData("Selecterr", autoSelect);
 		SmartDashboard.putData("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
-		SmartDashboard.putData("Gear Drop", new GearDrop(frontRightDrive, frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
+		SmartDashboard.putData("Gear Drop", new GearDrop(frontRightDrive,
+				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
 	}
 
 	// filters out noise on the Gyro
@@ -321,6 +331,9 @@ public class Robot extends IterativeRobot {
 		double lowerBound = shooterSpeed - percErr;
 		double upperBound = shooterSpeed + percErr;
 
+		boolean gyroMode = false;
+		double gyroHeading = 0;
+
 		// THIS IS THE CORRECT DRIVE CODE
 		double x = -valueWithDeadzone(omniJoy.getRawAxis(1), .1);
 		double y = valueWithDeadzone(omniJoy.getRawAxis(0), .1);
@@ -351,7 +364,7 @@ public class Robot extends IterativeRobot {
 				|| PDP.getCurrent(RL) < 1 || PDP.getCurrent(RR) < 1) {
 			xbax.setRumble(RumbleType.kLeftRumble, 1.0);
 		} else {
-			xbax.setRumble(RumbleType.kLeftRumble, 0.0); 
+			xbax.setRumble(RumbleType.kLeftRumble, 0.0);
 		}
 
 		if (xbax.getRawButton(1)) {
@@ -401,7 +414,23 @@ public class Robot extends IterativeRobot {
 				shootPID.disable();
 			}
 
+			//while (gearLimitSwitch.get()){
+			//	gearPickUp.set(0);
+			//}
+			
 		}
+		if (gyroMode) {
+			double error = (gyroHeading) - (gyro.getAngle());
+			double kP = SmartDashboard.getNumber("Gyro kP", .05);
+			SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
+			if (rotation == 0) {
+				gyroHeading = gyro.getAngle();
+
+			} else {
+				rotation = rotation + kP * error;
+			}
+		}
+		SmartDashboard.putNumber("Rotation", rotation);
 
 		{
 
