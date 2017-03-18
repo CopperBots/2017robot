@@ -14,20 +14,20 @@ public class JustDrive extends Command {
 	private CANTalon rearRightDrive;
 	private CANTalon rearLeftDrive;
 
-	public JustDrive(CANTalon frontRightDrive2, CANTalon frontLeftDrive2, CANTalon rearLeftDrive2, CANTalon rearRightDrive2) {
+	public JustDrive(CANTalon frontLeftDrive, CANTalon rearLeftDrive, CANTalon frontRightDrive,  CANTalon rearRightDrive) {
 		// name thy talons
 
-		frontRightDrive = frontRightDrive2;
-		frontLeftDrive = frontLeftDrive2;
-		rearRightDrive = rearLeftDrive2;
-		rearLeftDrive = rearRightDrive2;
+		frontRightDrive = frontRightDrive;
+		frontLeftDrive = frontLeftDrive;
+		rearRightDrive = rearLeftDrive;
+		rearLeftDrive = rearRightDrive;
 
 	}
 
 	// init the timer and reset.start the thing
 	protected void initialize() {
 		time = new Timer();
-
+  
 		time.reset();
 		time.start();
 
@@ -37,7 +37,7 @@ public class JustDrive extends Command {
 	// if not ten then go not at all
 	protected void execute() {
 
-		if (time.get() < 3.25) {
+		if (time.get() < 3) {
 			
 			frontRightDrive.set(0.7);
 			frontLeftDrive.set(0.7);

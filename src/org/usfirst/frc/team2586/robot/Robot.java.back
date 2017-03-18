@@ -27,10 +27,7 @@ import edu.wpi.first.wpilibj.SerialPort;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.command.Command;
-import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -38,9 +35,6 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.AnalogGyro;
 //import edu.wpi.first.wpilibj.vision.USBCamera;
-
-
-
 
 
 import com.ctre.CANTalon;
@@ -159,12 +153,8 @@ public class Robot extends IterativeRobot {
 	private long lastTime = 0;
 	private double gravAngle = 0;
 	
-	private Timer time;
-	
 	boolean gyroMode = false;
 	double gyroHeading = 0;
-	
-	private Command autoCommand;
 	
 	public void robotInit() {
 		
@@ -176,16 +166,10 @@ public class Robot extends IterativeRobot {
 		frontRightDrive = new CANTalon(FR);
 		rearLeftDrive = new CANTalon(RL);
 		rearRightDrive = new CANTalon(RR);
-		
-		CANTalon t1 = new CANTalon(10);
-		CANTalon t2 = new CANTalon(11);
-		CANTalon t3 = new CANTalon(12);
-		CANTalon t4 = new CANTalon(13);
 
-		frontLeftDrive.setInverted(true);
 		frontRightDrive.setInverted(true);
+		rearRightDrive.setInverted(true);
 
-		
 		
 		CameraServer camera = CameraServer.getInstance();
 		
@@ -230,11 +214,9 @@ public class Robot extends IterativeRobot {
 		// rearRightEncoder = new Encoder(REAR_RIGHT_ENCODER_PWM, 2);
 		// rearLeftEncoder = new Encoder(REAR_LEFT_ENCODER_PWM, 3);
 
-		//hateDrive = new RobotDrive(frontRightDrive, rearRightDrive,
-		//		frontLeftDrive, rearLeftDrive);
-		
-		hateDrive = new RobotDrive(frontLeftDrive, rearLeftDrive, frontRightDrive, rearRightDrive);
-		
+		hateDrive = new RobotDrive(frontRightDrive, rearRightDrive,
+				frontLeftDrive, rearLeftDrive);
+
 		PDP = new PowerDistributionPanel();
 
 		shootPID.startLiveWindowMode();
@@ -333,16 +315,8 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousInit() {
-		/*
 		// TODO Auto-generated method stub
-		autoCommand = (Command) autoSelect.getSelected();
-		autoCommand.start();
 		super.autonomousInit();
-		*/
-		time = new Timer();
-		  
-		time.reset();
-		time.start();
 	}
 
 	@Override
@@ -356,22 +330,7 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void autonomousPeriodic() {
-		//Scheduler.getInstance().run();
-		if (time.get() < 3) {
-			
-			frontRightDrive.set(0.7);
-			frontLeftDrive.set(0.7);
-			rearRightDrive.set(0.7);
-			rearLeftDrive.set(0.7);
 
-		} else {
-			frontRightDrive.set(0);
-			frontLeftDrive.set(0);
-			rearRightDrive.set(0);
-			rearLeftDrive.set(0);
-
-		}
-		
 	}
 
 	public void teleopPeriodic() {
@@ -383,9 +342,9 @@ public class Robot extends IterativeRobot {
 
 
 		// THIS IS THE CORRECT DRIVE CODE
-		double x = valueWithDeadzone(omniJoy.getRawAxis(0), .1);
-		double y = valueWithDeadzone(omniJoy.getRawAxis(1), .1);
-		double rotation = valueWithDeadzone(omniJoy.getRawAxis(2), .2);
+		double x = -valueWithDeadzone(omniJoy.getRawAxis(1), .1);
+		double y = valueWithDeadzone(omniJoy.getRawAxis(0), .1);
+		double rotation = -valueWithDeadzone(omniJoy.getRawAxis(2), .2);
 		
 		
 		/*Gyro is now in testing phase. Verify it works, then un-comment drive-assist, 
@@ -439,10 +398,6 @@ public class Robot extends IterativeRobot {
 		SmartDashboard.putNumber("Rotation", rotation);
 
 		hateDrive.mecanumDrive_Cartesian(x, y, rotation, 0);
-		
-		SmartDashboard.putNumber("X", x);
-		SmartDashboard.putNumber("Y", y);
-		SmartDashboard.putNumber("R", rotation);
 		
 		//PWM debug
 		SmartDashboard.putNumber("Front left output", frontLeftDrive.get());
