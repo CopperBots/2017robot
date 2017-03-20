@@ -3,11 +3,14 @@ package org.usfirst.frc.team2586.robot;
 import java.nio.channels.Selector;
 import java.util.Arrays;
 
+import edu.wpi.first.wpilibj.command.Command;
+
 import edu.wpi.first.wpilibj.CameraServer;
 
 import com.analog.adis16448.frc.ADIS16448_IMU;
 
 import edu.wpi.cscore.UsbCamera;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.Counter;
 import edu.wpi.first.wpilibj.DigitalInput;
@@ -38,6 +41,7 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.AnalogGyro;
 //import edu.wpi.first.wpilibj.vision.USBCamera;
+
 
 
 
@@ -85,6 +89,8 @@ public class Robot extends IterativeRobot {
 
 	
 	private static final int GEAR_LIMIT_SWITCH_PWM = 4;
+	
+	private static final int ULTRASONIC_PORT = 1;
 
 	// CANTalon refrence numbers
 	private static final int FL = 3;
@@ -122,7 +128,12 @@ public class Robot extends IterativeRobot {
 	private PowerDistributionPanel PDP;
 
 	private Gyro gyro = new AnalogGyro(0);
-
+	
+	private AnalogInput sanick = new AnalogInput(ULTRASONIC_PORT);
+	double volts;
+	double distance;
+	private static final double SCALING = 0.009765625;
+			
 	private DigitalInput gearLimitSwitch;
 	
 	private CameraServer camera;
@@ -164,7 +175,7 @@ public class Robot extends IterativeRobot {
 	boolean gyroMode = false;
 	double gyroHeading = 0;
 	
-	private Command autoCommand;
+	Command autoCommand;
 	
 	public void robotInit() {
 		
@@ -243,13 +254,15 @@ public class Robot extends IterativeRobot {
 		autoSelect.addDefault("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
 		autoSelect.addObject("Gear Drop", new GearDrop(frontRightDrive,
-				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
+				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp, sanick));
+		autoSelect.addObject("Just Drive Gyro", new JustDriveGyro(hateDrive, gyro));
 
 		SmartDashboard.putData("Selecterr", autoSelect);
 		SmartDashboard.putData("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
 		SmartDashboard.putData("Gear Drop", new GearDrop(frontRightDrive,
-				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp));
+				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp, sanick));
+		SmartDashboard.putData("Just Drive Gyro", new JustDriveGyro(hateDrive, gyro));
 	}
 
 	// filters out noise on the Gyro
@@ -333,16 +346,17 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousInit() {
-		/*
+		
 		// TODO Auto-generated method stub
 		autoCommand = (Command) autoSelect.getSelected();
 		autoCommand.start();
-		super.autonomousInit();
-		*/
+		//super.autonomousInit();
+		/*
 		time = new Timer();
 		  
 		time.reset();
 		time.start();
+		*/
 	}
 
 	@Override
@@ -356,7 +370,8 @@ public class Robot extends IterativeRobot {
 	}
 
 	public void autonomousPeriodic() {
-		//Scheduler.getInstance().run();
+		Scheduler.getInstance().run();
+		/*
 		if (time.get() < 3) {
 			
 			frontRightDrive.set(0.7);
@@ -371,10 +386,18 @@ public class Robot extends IterativeRobot {
 			rearLeftDrive.set(0);
 
 		}
+		*/
 		
 	}
 
 	public void teleopPeriodic() {
+		
+		volts = sanick.getVoltage();
+		distance = (volts/SCALING);
+		
+		SmartDashboard.putNumber("Sanick Volts", volts);
+		SmartDashboard.putNumber("Sanick distance (in)", distance);
+		
 		double shooterSpeed = SmartDashboard.getDouble("Shooter Speed", 50);
 
 		double percErr = shooterSpeed * PERCENT_SHOOT_SPEED;
@@ -487,7 +510,8 @@ public class Robot extends IterativeRobot {
 		// and motor is activated
 		// if toggle was set true and button is get then toggle is set to false
 		// and motor is deactivated
-
+		
+		
 		currentButton = xbax.getRawButton(CLIMB_BUTTON);
 		if (currentButton && !previousButton) {
 			climbToggle = !climbToggle;
@@ -498,9 +522,15 @@ public class Robot extends IterativeRobot {
 		}
 
 		if (climbToggle == true) {
+			/*
 			if (xbax.getRawAxis(1)<0){
 				climbClimb.set(xbax.getRawAxis(1));
 			}
+			*/
+			climbClimb.set(-1);
+		}
+		else if (xbax.getRawButton(3)){
+			climbClimb.set(-0.5);
 		}
 		else {
 			climbClimb.set(0);
