@@ -4,7 +4,6 @@ import java.nio.channels.Selector;
 import java.util.Arrays;
 
 import edu.wpi.first.wpilibj.command.Command;
-
 import edu.wpi.first.wpilibj.CameraServer;
 
 import com.analog.adis16448.frc.ADIS16448_IMU;
@@ -27,6 +26,7 @@ import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SerialPort;
+import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
@@ -41,11 +41,6 @@ import edu.wpi.first.wpilibj.SPI;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.AnalogGyro;
 //import edu.wpi.first.wpilibj.vision.USBCamera;
-
-
-
-
-
 
 import com.ctre.CANTalon;
 
@@ -62,10 +57,15 @@ public class Robot extends IterativeRobot {
 
 	private static final int IN_TAKE_TALON_PWM = 0;
 
+	private static final int GEAR_POP_OUT_SOLENOID_PORT = 0;
+	private static final int GEAR_POP_IN_SOLENOID_PORT = 1;
+	private static final int GEAR_TRAY_OUT_SOLENOID_PORT = 2;
+	private static final int GEAR_TRAY_IN_SOLENOID_PORT = 3;
+
 	private static final int SHOOTER_SMOOTHING = 1;
 
 	private static final int CLIMB_CLIMB_TALON_PWM = 2;
-	
+
 	private static final int GEAR_UP_BUTTON = 4;
 	private static final int GEAR_DOWN_BUTTON = 1;
 	private static final int CLIMB_BUTTON = 2;
@@ -74,22 +74,18 @@ public class Robot extends IterativeRobot {
 	private static final int GYRO_DISABLE_BUTTON = 12;
 
 	private static int cam1 = 0;
-	
 
 	private double PERCENT_SHOOT_SPEED = 0.1;
 
 	private static final double DEFAULT_SHOOT_SPEED = 50;
 
-// increase for smoother but less sensitive velocity
+	// increase for smoother but less sensitive velocity
 	private static final int SMOOTHING = 30;
 	private static final double SIGNAL_FLOOR = 0.005;
 
 	private static final int FEED_TALON_PWM = 7;
 	private static final int FEED_ENCODER_PWM = 3;
 
-	
-	private static final int GEAR_LIMIT_SWITCH_PWM = 4;
-	
 	private static final int ULTRASONIC_PORT = 1;
 
 	// CANTalon refrence numbers
@@ -112,7 +108,12 @@ public class Robot extends IterativeRobot {
 
 	// private Encoder shootOpEncode;
 
-	private Talon gearPickUp;
+	//private Talon gearPickUp;
+
+	private Solenoid gearPopOut;
+	private Solenoid gearPopIn;
+	private Solenoid gearTrayOut;
+	private Solenoid gearTrayIn;
 
 	private Talon climbClimb;
 
@@ -128,16 +129,16 @@ public class Robot extends IterativeRobot {
 	private PowerDistributionPanel PDP;
 
 	private Gyro gyro = new AnalogGyro(0);
-	
+
 	private AnalogInput sanick = new AnalogInput(ULTRASONIC_PORT);
 	double volts;
 	double distance;
 	private static final double SCALING = 0.009765625;
-			
-	private DigitalInput gearLimitSwitch;
-	
-	private CameraServer camera;
-	
+
+	//private DigitalInput gearLimitSwitch;
+
+	//private CameraServer camera;
+
 	// private Encoder frontLeftEncoder;
 	// private Encoder frontRightEncoder;
 	// private Encoder rearLeftEncoder;
@@ -169,17 +170,16 @@ public class Robot extends IterativeRobot {
 	private int samplesSinceCal = 0;
 	private long lastTime = 0;
 	private double gravAngle = 0;
-	
+
 	private Timer time;
-	
+
 	boolean gyroMode = false;
 	double gyroHeading = 0;
-	
+
 	Command autoCommand;
-	
+
 	public void robotInit() {
-		
-		
+
 		// these numbers correspond with the ID numbers of the individual
 		// CANTalons
 		// leave blank for now
@@ -187,27 +187,22 @@ public class Robot extends IterativeRobot {
 		frontRightDrive = new CANTalon(FR);
 		rearLeftDrive = new CANTalon(RL);
 		rearRightDrive = new CANTalon(RR);
-		
-		CANTalon t1 = new CANTalon(10);
-		CANTalon t2 = new CANTalon(11);
-		CANTalon t3 = new CANTalon(12);
-		CANTalon t4 = new CANTalon(13);
 
 		frontLeftDrive.setInverted(true);
 		frontRightDrive.setInverted(true);
 
-		
-		
-		CameraServer camera = CameraServer.getInstance();
-		
-		 
-		camera.startAutomaticCapture(cam1);
-		
-		
+		//CameraServer camera = CameraServer.getInstance();
+
+		//camera.startAutomaticCapture(cam1);
 
 		// push to turn on gearPickUp; release to stop
 
-		gearPickUp = new Talon(IN_TAKE_TALON_PWM);
+		//gearPickUp = new Talon(IN_TAKE_TALON_PWM);
+
+		gearPopOut = new Solenoid(GEAR_POP_OUT_SOLENOID_PORT);
+		gearPopIn = new Solenoid(GEAR_POP_IN_SOLENOID_PORT);
+		gearTrayOut = new Solenoid(GEAR_TRAY_OUT_SOLENOID_PORT);
+		gearTrayIn = new Solenoid(GEAR_TRAY_IN_SOLENOID_PORT);
 
 		// shootOpEncode = new Encoder(SHOOT_OPTICAL_ENCODER_PWM, 6);
 
@@ -234,18 +229,17 @@ public class Robot extends IterativeRobot {
 
 		imu = new ADIS16448_IMU();
 
-		gearLimitSwitch = new DigitalInput(GEAR_LIMIT_SWITCH_PWM);
-		
 		// frontLeftEncoder = new Encoder(FRONT_LEFT_ENCODER_PWM, 0);
 		// frontRightEncoder = new Encoder(FRONT_RIGHT_ENCODER_PWM, 1);
 		// rearRightEncoder = new Encoder(REAR_RIGHT_ENCODER_PWM, 2);
 		// rearLeftEncoder = new Encoder(REAR_LEFT_ENCODER_PWM, 3);
 
-		//hateDrive = new RobotDrive(frontRightDrive, rearRightDrive,
-		//		frontLeftDrive, rearLeftDrive);
-		
-		hateDrive = new RobotDrive(frontLeftDrive, rearLeftDrive, frontRightDrive, rearRightDrive);
-		
+		// hateDrive = new RobotDrive(frontRightDrive, rearRightDrive,
+		// frontLeftDrive, rearLeftDrive);
+
+		hateDrive = new RobotDrive(frontLeftDrive, rearLeftDrive,
+				frontRightDrive, rearRightDrive);
+
 		PDP = new PowerDistributionPanel();
 
 		shootPID.startLiveWindowMode();
@@ -253,16 +247,20 @@ public class Robot extends IterativeRobot {
 		autoSelect = new SendableChooser();
 		autoSelect.addDefault("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
-		autoSelect.addObject("Gear Drop", new GearDrop(frontRightDrive,
-				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp, sanick));
-		autoSelect.addObject("Just Drive Gyro", new JustDriveGyro(hateDrive, gyro));
+		/*autoSelect.addObject("Gear Drop", new GearDrop(frontRightDrive,
+				frontLeftDrive, rearRightDrive, rearLeftDrive,
+				climbClimb, sanick));*/
+		autoSelect.addObject("Just Drive Gyro", new JustDriveGyro(hateDrive,
+				gyro));
 
 		SmartDashboard.putData("Selecterr", autoSelect);
 		SmartDashboard.putData("Just Drive", new JustDrive(frontRightDrive,
 				frontLeftDrive, rearLeftDrive, rearRightDrive));
-		SmartDashboard.putData("Gear Drop", new GearDrop(frontRightDrive,
-				frontLeftDrive, rearRightDrive, rearLeftDrive, gearPickUp, sanick));
-		SmartDashboard.putData("Just Drive Gyro", new JustDriveGyro(hateDrive, gyro));
+		/*SmartDashboard.putData("Gear Drop", new GearDrop(frontRightDrive,
+				frontLeftDrive, rearRightDrive, rearLeftDrive,
+				climbClimb, sanick));*/
+		SmartDashboard.putData("Just Drive Gyro", new JustDriveGyro(hateDrive,
+				gyro));
 	}
 
 	// filters out noise on the Gyro
@@ -346,24 +344,23 @@ public class Robot extends IterativeRobot {
 
 	@Override
 	public void autonomousInit() {
-		
+
 		// TODO Auto-generated method stub
 		autoCommand = (Command) autoSelect.getSelected();
 		autoCommand.start();
-		//super.autonomousInit();
+		// super.autonomousInit();
 		/*
-		time = new Timer();
-		  
-		time.reset();
-		time.start();
-		*/
+		 * time = new Timer();
+		 * 
+		 * time.reset(); time.start();
+		 */
 	}
 
 	@Override
 	public void teleopInit() {
 		// TODO Auto-generated method stub
 		super.teleopInit();
-		//shootPID.enable();
+		// shootPID.enable();
 		shootPID.setInputRange(0, 5000);
 
 		SmartDashboard.putDouble("Shooter Speed", DEFAULT_SHOOT_SPEED);
@@ -372,60 +369,73 @@ public class Robot extends IterativeRobot {
 	public void autonomousPeriodic() {
 		Scheduler.getInstance().run();
 		/*
-		if (time.get() < 3) {
-			
+		 * if (time.get() < 3) {
+		 * 
+		 * frontRightDrive.set(0.7); frontLeftDrive.set(0.7);
+		 * rearRightDrive.set(0.7); rearLeftDrive.set(0.7);
+		 * 
+		 * } else { frontRightDrive.set(0); frontLeftDrive.set(0);
+		 * rearRightDrive.set(0); rearLeftDrive.set(0);
+		 * 
+		 * }
+		 */
+
+	/*	if (time.get() < 3) {
 			frontRightDrive.set(0.7);
 			frontLeftDrive.set(0.7);
 			rearRightDrive.set(0.7);
 			rearLeftDrive.set(0.7);
-
+		} else if (time.get() > 3) {
+			frontRightDrive.set(0);
+			frontLeftDrive.set(0);
+			rearRightDrive.set(0);
+			rearLeftDrive.set(0);
+			gearPopOut.set(true);
+		} else if (time.get() > 5) {
+			frontRightDrive.set(-0.3);
+			frontLeftDrive.set(-0.3);
+			rearRightDrive.set(-0.3);
+			rearLeftDrive.set(-0.3);
 		} else {
 			frontRightDrive.set(0);
 			frontLeftDrive.set(0);
 			rearRightDrive.set(0);
 			rearLeftDrive.set(0);
-
-		}
-		*/
-		
-	}
+	*/	}
+	
 
 	public void teleopPeriodic() {
-		
+
 		volts = sanick.getVoltage();
-		distance = (volts/SCALING);
-		
+		distance = (volts / SCALING);
+
 		SmartDashboard.putNumber("Sanick Volts", volts);
 		SmartDashboard.putNumber("Sanick distance (in)", distance);
-		
+
 		double shooterSpeed = SmartDashboard.getDouble("Shooter Speed", 50);
 
 		double percErr = shooterSpeed * PERCENT_SHOOT_SPEED;
 		double lowerBound = shooterSpeed - percErr;
 		double upperBound = shooterSpeed + percErr;
 
-
 		// THIS IS THE CORRECT DRIVE CODE
 		double x = valueWithDeadzone(omniJoy.getRawAxis(0), .1);
 		double y = valueWithDeadzone(omniJoy.getRawAxis(1), .1);
 		double rotation = valueWithDeadzone(omniJoy.getRawAxis(2), .2);
-		
-		
-		/*Gyro is now in testing phase. Verify it works, then un-comment drive-assist, 
-		 * make sure there is a toggle, and try with drive assist.
-		 * Next objective: gyro assist auton code.*/
-		SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
-		SmartDashboard.putBoolean("upper limit switch status", gearLimitSwitch.get());
-		
+
 		/*
-		if (gearLimitSwitch.get()){
-			System.out.println("switch is on");
-		}
-		else{
-			System.out.println("switch is off");
-			//hi
-		}
-		*/
+		 * Gyro is now in testing phase. Verify it works, then un-comment
+		 * drive-assist, make sure there is a toggle, and try with drive assist.
+		 * Next objective: gyro assist auton code.
+		 */
+		SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
+		//SmartDashboard.putBoolean("upper limit switch status",
+			//	gearLimitSwitch.get());
+
+		/*
+		 * if (gearLimitSwitch.get()){ System.out.println("switch is on"); }
+		 * else{ System.out.println("switch is off"); //hi }
+		 */
 		// xbox override
 		// double x = -valueWithDeadzone(blackHand.getRawAxis(1), .1);
 		// double y = valueWithDeadzone(blackHand.getRawAxis(0), .1);
@@ -437,20 +447,18 @@ public class Robot extends IterativeRobot {
 		// THETA = if/else statement; expected angle straight ahead(90*)
 		// if THETA is <90 then THETA = THETA + (90 - THETA)
 		// if THETA is >90 then THETA = THETA - (90 - THETA)
-		
+
 		SmartDashboard.putBoolean("gyromode", gyroMode);
-		if(omniJoy.getRawButton(GYRO_ENABLE_BUTTON)){
+		if (omniJoy.getRawButton(GYRO_ENABLE_BUTTON)) {
 			gyroMode = true;
-		}
-		else if(omniJoy.getRawButton(GYRO_DISABLE_BUTTON)){
+		} else if (omniJoy.getRawButton(GYRO_DISABLE_BUTTON)) {
 			gyroMode = false;
 		}
-		
-		
+
 		if (gyroMode) {
 			double error = (gyroHeading) - (gyro.getAngle());
 			double kP = SmartDashboard.getNumber("Gyro kP", .05);
-			//SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
+			// SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
 			if (rotation == 0) {
 				gyroHeading = gyro.getAngle();
 
@@ -458,16 +466,26 @@ public class Robot extends IterativeRobot {
 				rotation = rotation + kP * error;
 			}
 		}
+
+		if (xbax.getRawButton(3) || omniJoy.getRawButton(9)) {
+			gearPopOut.set(true);
+			gearPopIn.set(false);
+		} else {
+			gearPopOut.set(false);
+			gearPopIn.set(true);
+		}
+
+		
 		
 		SmartDashboard.putNumber("Rotation", rotation);
 
 		hateDrive.mecanumDrive_Cartesian(x, y, rotation, 0);
-		
+
 		SmartDashboard.putNumber("X", x);
 		SmartDashboard.putNumber("Y", y);
 		SmartDashboard.putNumber("R", rotation);
-		
-		//PWM debug
+
+		// PWM debug
 		SmartDashboard.putNumber("Front left output", frontLeftDrive.get());
 		SmartDashboard.putNumber("Front right output", frontRightDrive.get());
 		SmartDashboard.putNumber("Rear left output", rearLeftDrive.get());
@@ -479,40 +497,34 @@ public class Robot extends IterativeRobot {
 		// frontLeftDrive.set(0);
 		// rearLeftDrive.set(0);/
 		// }
-		
+
 		/*
-		if (PDP.getCurrent(FR) < 1 || PDP.getCurrent(FL) < 1
-				|| PDP.getCurrent(RL) < 1 || PDP.getCurrent(RR) < 1) {
-			xbax.setRumble(RumbleType.kLeftRumble, 1.0);
+		 * if (PDP.getCurrent(FR) < 1 || PDP.getCurrent(FL) < 1 ||
+		 * PDP.getCurrent(RL) < 1 || PDP.getCurrent(RR) < 1) {
+		 * xbax.setRumble(RumbleType.kLeftRumble, 1.0); } else {
+		 * xbax.setRumble(RumbleType.kLeftRumble, 0.0); }
+		 */
+
+		if (xbax.getRawButton(GEAR_UP_BUTTON) || omniJoy.getRawButton(7)) {
+			gearTrayOut.set(true);
+			gearTrayIn.set(false);
 		} else {
-			xbax.setRumble(RumbleType.kLeftRumble, 0.0);
+			gearTrayIn.set(true);
+			gearTrayOut.set(false);
 		}
-		*/
 		
 		
-		if (xbax.getRawButton(GEAR_UP_BUTTON) && gearLimitSwitch.get()) {
-			gearPickUp.set(0.5);
-		}
-		else if (xbax.getRawButton(GEAR_DOWN_BUTTON)) {
-			gearPickUp.set(-0.5);
-		}
-		else{
-			gearPickUp.set(0);
-		}
 		/*
-		while (gearLimitSwitch.get()){
-			gearPickUp.set(0);
-		}
-		*/
+		 * while (gearLimitSwitch.get()){ gearPickUp.set(0); }
+		 */
 
 		// toggle set false
 		// if toggle was set false and button is get then toggle is set to true
 		// and motor is activated
 		// if toggle was set true and button is get then toggle is set to false
 		// and motor is deactivated
-		
-		
-		currentButton = xbax.getRawButton(CLIMB_BUTTON);
+
+		currentButton = xbax.getRawButton(CLIMB_BUTTON)|| omniJoy.getRawButton(10);
 		if (currentButton && !previousButton) {
 			climbToggle = !climbToggle;
 			previousButton = true;
@@ -523,69 +535,50 @@ public class Robot extends IterativeRobot {
 
 		if (climbToggle == true) {
 			/*
-			if (xbax.getRawAxis(1)<0){
-				climbClimb.set(xbax.getRawAxis(1));
-			}
-			*/
+			 * if (xbax.getRawAxis(1)<0){ climbClimb.set(xbax.getRawAxis(1)); }
+			 */
 			climbClimb.set(-1);
-		}
-		else if (xbax.getRawButton(3)){
+		} else if (xbax.getRawButton(3)) {
 			climbClimb.set(-0.5);
-		}
-		else {
+		} else {
 			climbClimb.set(0);
 		}
 		SmartDashboard.putBoolean("Climb toggle", climbToggle);
-		
+
 		/*
-		currentButtonShoot = xbax.getRawButton(SHOOT_BUTTON);
-		if (currentButtonShoot && !previousButtonShoot) {
-			shootToggle = !shootToggle;
-			previousButtonShoot = true;
-		}
-		if (currentButtonShoot == false) {
-			previousButtonShoot = false;
-		}
+		 * currentButtonShoot = xbax.getRawButton(SHOOT_BUTTON); if
+		 * (currentButtonShoot && !previousButtonShoot) { shootToggle =
+		 * !shootToggle; previousButtonShoot = true; } if (currentButtonShoot ==
+		 * false) { previousButtonShoot = false; }
+		 * 
+		 * if (shootToggle == true) { shootPID.enable();
+		 * shootPID.setSetpoint(shooterSpeed);
+		 * 
+		 * if (shootSpeed.getRate() > lowerBound && shootSpeed.getRate() <
+		 * upperBound) { feedTalon.set(1);
+		 * 
+		 * } else { feedTalon.set(0); shootPID.disable(); }
+		 * 
+		 * 
+		 * 
+		 * }
+		 */
 
-		if (shootToggle == true) {
-			shootPID.enable();
-			shootPID.setSetpoint(shooterSpeed);
+		/*
+		 * SHOOTER CODE IS COMMENTED OUT {
+		 * 
+		 * SmartDashboard.putData("Shoot Motor Tuning", shootPID);
+		 * 
+		 * SmartDashboard.putBoolean("Climber Toggle", climbToggle);
+		 * 
+		 * double smoothSpeed = Arrays.stream(previousSamplesShooter).reduce( 0,
+		 * (a, z) -> a + z) / SHOOTER_SMOOTHING;
+		 * SmartDashboard.putNumber("Shoot Speed smooth", smoothSpeed);
+		 * SmartDashboard.putNumber("Shooter RPM", smoothSpeed * 60);
+		 * SmartDashboard .putNumber("Current Shooter Percent",
+		 * shootEmUp.get()); }
+		 */
 
-			if (shootSpeed.getRate() > lowerBound
-					&& shootSpeed.getRate() < upperBound) {
-				feedTalon.set(1);
-
-			} else {
-				feedTalon.set(0);
-				shootPID.disable();
-			}
-
-			
-			
-		}
-		*/
-		
-		
-		
-		
-		
-		/*SHOOTER CODE IS COMMENTED OUT
-		{
-
-			SmartDashboard.putData("Shoot Motor Tuning", shootPID);
-
-			SmartDashboard.putBoolean("Climber Toggle", climbToggle);
-
-			double smoothSpeed = Arrays.stream(previousSamplesShooter).reduce(
-					0, (a, z) -> a + z)
-					/ SHOOTER_SMOOTHING;
-			SmartDashboard.putNumber("Shoot Speed smooth", smoothSpeed);
-			SmartDashboard.putNumber("Shooter RPM", smoothSpeed * 60);
-			SmartDashboard
-					.putNumber("Current Shooter Percent", shootEmUp.get());
-		}
-		*/
-		
 		// SmartDashboard.putData("IMU", imu);
 		// SmartDashboard.putNumber("Xvel", xVel);
 		// SmartDashboard.putNumber("Yvel", yVel);
@@ -618,15 +611,10 @@ public class Robot extends IterativeRobot {
 
 	public double valueWithDeadzone(double in, double dead) {
 		/*
-		dead -= dead * (Math.abs(in) / 1);
-		if (-dead < in && in < dead)
-			return 0;
-		if (in < 0) {
-			return in + dead;
-		} else {
-			return in - dead;
-		}
-		*/
+		 * dead -= dead * (Math.abs(in) / 1); if (-dead < in && in < dead)
+		 * return 0; if (in < 0) { return in + dead; } else { return in - dead;
+		 * }
+		 */
 		return in;
 
 	}

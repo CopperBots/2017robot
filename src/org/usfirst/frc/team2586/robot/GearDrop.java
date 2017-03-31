@@ -6,6 +6,7 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Command;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 
 public class GearDrop extends Command {
 
@@ -16,18 +17,24 @@ public class GearDrop extends Command {
 	private CANTalon rearLeftDrive;
 	private Talon gearPickUp;
 	private AnalogInput ultraSanick;
+	private Gyro myGyro;
 	double volt;
 	double inchDistance;
 	double scale = 0.009765625;
+	double theX;
+	double theY;
+	double theRot;
+	double myGyroHeading = 0;
 
-	public GearDrop(CANTalon frontRightDrive2, CANTalon frontLeftDrive2, CANTalon rearLeftDrive2, CANTalon rearRightDrive2, Talon gearDrop, AnalogInput ultra) {
+	public GearDrop(CANTalon frontRightDrive2, CANTalon frontLeftDrive2, CANTalon rearLeftDrive2, CANTalon rearRightDrive2, Talon gearDrop, AnalogInput ultra, Gyro theGyro) {
 		// name thy talons
 		ultraSanick = ultra;
 		frontRightDrive = frontRightDrive2;
 		frontLeftDrive = frontLeftDrive2;
 		rearRightDrive = rearLeftDrive2;
 		rearLeftDrive = rearRightDrive2;
-		gearPickUp = gearDrop;
+	//	gearPickUp = gearDrop;
+		myGyro = theGyro;
 
 	}
 
@@ -37,6 +44,8 @@ public class GearDrop extends Command {
 		  
 		time.reset();
 		time.start();
+		
+		myGyro.reset();
 		
 		while (time.get() < 0.4){
 			gearPickUp.set(-0.5);
@@ -54,16 +63,16 @@ public class GearDrop extends Command {
 
 		if ((inchDistance > 25)&&(time.get() < 3)){
 			
-			frontRightDrive.set(0.7);
-			frontLeftDrive.set(0.7);
-			rearRightDrive.set(0.7);
-			rearLeftDrive.set(0.7);
+			theX = 0;
+			theY = -1;
+			theRot = 0;
+			
 
 		} else {
-			frontRightDrive.set(0);
-			frontLeftDrive.set(0);
-			rearRightDrive.set(0);
-			rearLeftDrive.set(0);
+			theX = 0;
+			theY = 0;
+			theRot = 0;
+			
 
 		}
 
