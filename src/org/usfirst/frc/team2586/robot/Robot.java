@@ -133,6 +133,7 @@ public class Robot extends IterativeRobot {
 	private PIDController feedPID;
 
 	private Joystick omniJoy;
+	private XboxController driveGamepad;
 	private XboxController xbax;
 
 	private SendableChooser autoSelect;
@@ -236,7 +237,8 @@ public class Robot extends IterativeRobot {
 		shootPID.setPercentTolerance(PERCENT_SHOOT_SPEED * 100);
 		*/
 
-		omniJoy = new Joystick(OMNI_JOYSTICK_PORT);
+		//omniJoy = new Joystick(OMNI_JOYSTICK_PORT);
+		driveGamepad = new XboxController(0);
 		xbax = new XboxController(XBAX_CONTROL_PORT);
 
 		imu = new ADIS16448_IMU();
@@ -360,7 +362,7 @@ public class Robot extends IterativeRobot {
 
 			double angleDiff = Math.toRadians(-(smoothRateAngle - gravAngle));
 
-			double gravityXcomp = gravX * Math.cos(angleDiff) - gravY
+			double gravity = gravX * Math.cos(angleDiff) - gravY
 					* Math.sin(angleDiff);
 			double gravityYcomp = gravX * Math.sin(angleDiff) + gravY
 					* Math.cos(angleDiff);
@@ -379,9 +381,17 @@ public class Robot extends IterativeRobot {
 		 * SMART DASH DISPLAYS
 		 */
 		
+		/*
 		if (omniJoy.getRawButton(GYRO_ENABLE_BUTTON)) {
 			gyroMode = true;
 		} else if (omniJoy.getRawButton(GYRO_DISABLE_BUTTON)) {
+			gyroMode = false;
+		}
+		*/
+		
+		if (driveGamepad.getRawButton(7)) {
+			gyroMode = true;
+		} else if (driveGamepad.getRawButton(8)) {
 			gyroMode = false;
 		}
 		
@@ -484,9 +494,15 @@ public class Robot extends IterativeRobot {
 		*/
 
 		// THIS IS THE CORRECT DRIVE CODE
+		/*
 		double x = valueWithDeadzone(omniJoy.getRawAxis(0), .1);
 		double y = valueWithDeadzone(omniJoy.getRawAxis(1), .1);
 		double rotation = valueWithDeadzone(omniJoy.getRawAxis(2), .2);
+		*/
+		
+		double x = valueWithDeadzone(driveGamepad.getRawAxis(0), .1);
+		double y = valueWithDeadzone(driveGamepad.getRawAxis(1), .1);
+		double rotation = valueWithDeadzone(driveGamepad.getRawAxis(4), .2);
 
 		/*
 		 * Gyro is now in testing phase. Verify it works, then un-comment
@@ -528,13 +544,13 @@ public class Robot extends IterativeRobot {
 			// SmartDashboard.putNumber("Gyro angle", gyro.getAngle());
 			if (Math.abs(rotation) > 0.05) {
 				gyroHeading = gyro.getAngle();
-
+//jarrick is goon
 			} else {
 				rotation = rotation + kP * error;
 			}
 		}
 
-		if (xbax.getRawButton(3) || omniJoy.getRawButton(9)) {
+		if (xbax.getRawButton(3) || driveGamepad.getRawButton(2)) {
 			gearPopOut.set(true);
 			gearPopIn.set(false);
 		} else {
@@ -573,7 +589,7 @@ public class Robot extends IterativeRobot {
 		 * xbax.setRumble(RumbleType.kLeftRumble, 0.0); }
 		 */
 
-		if (xbax.getRawButton(GEAR_UP_BUTTON) || omniJoy.getRawButton(7)) {
+		if (xbax.getRawButton(GEAR_UP_BUTTON) || driveGamepad.getRawButton(4)) {
 			gearTrayOut.set(true);
 			gearTrayIn.set(false);
 		} else {
@@ -581,11 +597,11 @@ public class Robot extends IterativeRobot {
 			gearTrayOut.set(false);
 		}
 		
-		if (xbax.getRawButton(CLIMB_BUTTON)|| omniJoy.getRawButton(10)){
+		if (xbax.getRawButton(CLIMB_BUTTON)|| driveGamepad.getRawButton(6)){
 			climbClimb.set(-1);
 
 		}
-		else if (xbax.getRawButton(CLIMB_BUTTON_SLOW)) {
+		else if (xbax.getRawButton(CLIMB_BUTTON_SLOW) || driveGamepad.getRawButton(5)) {
 			climbClimb.set(-0.5);
 		}
 		else{
@@ -691,12 +707,17 @@ public class Robot extends IterativeRobot {
 	// TODO Auto-generated method stub
 
 	public double valueWithDeadzone(double in, double dead) {
-		/*
-		 * dead -= dead * (Math.abs(in) / 1); if (-dead < in && in < dead)
-		 * return 0; if (in < 0) { return in + dead; } else { return in - dead;
-		 * }
-		 */
-		return in;
+		
+		dead -= dead * (Math.abs(in) / 1);
+		if (-dead < in && in < dead){ 
+			return 0;
+		}
+		if (in < 0) {
+			return in + dead;
+		} else {
+			return in - dead;
+		}
+		
 
 	}
 

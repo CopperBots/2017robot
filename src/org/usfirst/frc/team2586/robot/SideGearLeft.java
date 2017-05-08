@@ -77,7 +77,104 @@ public class SideGearLeft extends Command {
 	// if not ten then go not at all
 	protected void execute() {
 		switch (state){
-			case 0:
+		case 0:
+			myGyro.reset(); //reset eveything
+			
+			encFR.reset();
+			encFL.reset();
+			encRR.reset();
+			encRL.reset();
+			
+			time.reset();
+			
+			popIn.set(true);
+			popOut.set(false);
+			
+			state++;
+			break;
+			
+		case 1:
+			if (encRL.getDistance() < 114.0-39.0) {//Move forward
+				theX = 0;
+				theY = -1;
+				theRot = 0;
+		
+
+			} else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				time.reset();
+				state++;
+			}
+			
+			break;
+		case 2:
+			if (time.get()>0.5){//delay
+				time.reset();
+				state++;
+			}
+			break;
+		case 3:
+			if (myGyro.getAngle() < 50) {//turn 50 degrees
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				
+				myGyroHeading = 50;
+		
+
+			} else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				encRL.reset();
+				time.reset();
+				state++;
+			}
+			break;
+		case 4:
+			if (time.get()>0.5){//Delay
+				time.reset();
+				state++;
+			}
+			break;
+		case 5:
+			if (encRL.getDistance() < 28.0){// move forward to place gear
+				theX = 0;
+				theY = -0.7;
+				theRot = 0;
+			}
+			else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				state++;
+			}
+			if (time.get() > 2.0){
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				state++;
+			}
+			break;
+		case 6:
+			time.reset();
+			state++;
+		case 7:
+			
+			popOut.set(true); //place gear on peg
+			popIn.set(false);
+			if (time.get() > 0.25){
+				popOut.set(false);
+				popIn.set(true);
+			}
+			if (time.get() > 0.5){
+				popOut.set(true);
+				popIn.set(false);
+			}
+			
+			if (time.get() > 1.0){
 				myGyro.reset();
 				
 				encFR.reset();
@@ -85,114 +182,82 @@ public class SideGearLeft extends Command {
 				encRR.reset();
 				encRL.reset();
 				
-				time.reset();
-				
-				popIn.set(true);
-				popOut.set(false);
-				
 				state++;
-				break;
-				
-			case 1:
-				if (encRL.getDistance() < 114.0-39) {//Move forward
-					theX = 0;
-					theY = -1;
-					theRot = 0;
-			
+			}
+			break;
+		/*
+		case 8:
+			if (encRL.getDistance() > -12.0) { //back up from peg
+				theX = 0;
+				theY = 1;
+				theRot = 0;
+		
 
-				} else {
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					time.reset();
-					
-					state++;
-				}
-				
-				break;
-			case 2:
-				if (time.get() > 1.0){ //Delay 1 sec
-					time.reset();
-					state++;
-				}
-				break;
-			case 3:
-				if (myGyro.getAngle() < 50 ) {//Turn 50 degrees
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					
-					myGyroHeading = 50;
-			
+			} else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				time.reset();
+				state++;
+			}
+			break;
+		case 9:
+			if (encRL.getDistance() < 10.0) { //ram peg
+				theX = 0;
+				theY = -1;
+				theRot = 0;
+		
 
-				} else {
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					encRL.reset();
-					time.reset();
-					state++;
-				}
-				break;
-			case 4:
-				if (time.get() > 1.0){//Delay 1 sec
-					time.reset();
-					state++;
-				}
-				break;
-			case 5:
-				if (encRL.getDistance() < 39.0){//move Forward to place gear
-					theX = 0;
-					theY = -1.0;
-					theRot = 0;
-				}
-				else {
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					state++;
-				}
-				if (time.get() > 2.0){
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					state++;
-				}
-				break;
-			case 6:
-				popOut.set(true);// Push gear onto peg
-				popIn.set(false);
-				if (time.get() > 3.0){
-					myGyro.reset();
-					
-					encFR.reset();
-					encFL.reset();
-					encRR.reset();
-					encRL.reset();
-					
-					state++;
-				}
-				break;
-			case 7:
-				if (encRL.getDistance() > -39.0) {//move back from peg
-					theX = 0;
-					theY = 1;
-					theRot = 0;
-			
+			} else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				time.reset();
+				state++;
+			}
+			if (time.get() > 1.0){
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				time.reset();
+				state++;
+			}
+			break;
+		*/
+		case 8:
+			if (encRL.getDistance() > -12.0) { //back up from peg
+				theX = 0;
+				theY = 1;
+				theRot = 0;
+		
 
-				} else {
-					theX = 0;
-					theY = 0;
-					theRot = 0;
-					time.reset();
-					state++;
-				}
-				break;
-			case 8:
-				popIn.set(true); //return pistons
-				popOut.set(false);
-				
-				break;
+			} else {
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				time.reset();
+				state++;
+			}
+			break;
+		case 9:
+			popIn.set(true);//retract pistons
+			popOut.set(false);
+			state++;
+			break;
+		case 10:
+			
+			theX = 0;
+			theY = 0;
+			theRot = 0;
+			myGyro.reset();
+			
+			encFR.reset();
+			encFL.reset();
+			encRR.reset();
+			encRL.reset();
+			myGyroHeading = 0;
+			
+			break;
 		}
 		
 		

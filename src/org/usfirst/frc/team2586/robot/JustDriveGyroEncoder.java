@@ -96,9 +96,9 @@ public class JustDriveGyroEncoder extends Command {
 			case 1:
 				if (encRL.getDistance() < 62) {
 					theX = 0;
-					theY = -1;
+					theY = -0.7;
 					theRot = 0;
-			
+			//rawr xd
 
 				} else {
 					theX = 0;
@@ -133,7 +133,7 @@ public class JustDriveGyroEncoder extends Command {
 			case 3:
 				if (encRL.getDistance() > -39.0) {
 					theX = 0;
-					theY = 1;
+					theY = 0.7;
 					theRot = 0;
 			
 

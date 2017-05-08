@@ -110,7 +110,7 @@ public class SideGearRight extends Command {
 				
 				break;
 			case 2:
-				if (time.get()>1.0){//delay 1 sec
+				if (time.get()>0.5){//delay
 					time.reset();
 					state++;
 				}
@@ -134,15 +134,15 @@ public class SideGearRight extends Command {
 				}
 				break;
 			case 4:
-				if (time.get()>1.0){//Delay 1 sec
+				if (time.get()>0.5){//Delay
 					time.reset();
 					state++;
 				}
 				break;
 			case 5:
-				if (encRL.getDistance() < 39.0){// move forward to place gear
+				if (encRL.getDistance() < 28.0){// move forward to place gear
 					theX = 0;
-					theY = -1.0;
+					theY = -0.7;
 					theRot = 0;
 				}
 				else {
@@ -159,9 +159,22 @@ public class SideGearRight extends Command {
 				}
 				break;
 			case 6:
+				time.reset();
+				state++;
+			case 7:
+				
 				popOut.set(true); //place gear on peg
 				popIn.set(false);
-				if (time.get() > 3.0){
+				if (time.get() > 0.25){
+					popOut.set(false);
+					popIn.set(true);
+				}
+				if (time.get() > 0.5){
+					popOut.set(true);
+					popIn.set(false);
+				}
+				
+				if (time.get() > 1.0){
 					myGyro.reset();
 					
 					encFR.reset();
@@ -172,8 +185,9 @@ public class SideGearRight extends Command {
 					state++;
 				}
 				break;
-			case 7:
-				if (encRL.getDistance() > -39.0) { //back up from peg
+			/*
+			case 8:
+				if (encRL.getDistance() > -12.0) { //back up from peg
 					theX = 0;
 					theY = 1;
 					theRot = 0;
@@ -187,9 +201,62 @@ public class SideGearRight extends Command {
 					state++;
 				}
 				break;
+			
+			case 9:
+				if (encRL.getDistance() < 10.0) { //ram peg
+					theX = 0;
+					theY = -1;
+					theRot = 0;
+			
+
+				} else {
+					theX = 0;
+					theY = 0;
+					theRot = 0;
+					time.reset();
+					state++;
+				}
+				if (time.get() > 1.0){
+					theX = 0;
+					theY = 0;
+					theRot = 0;
+					time.reset();
+					state++;
+				}
+				break;
+			*/
 			case 8:
+				if (encRL.getDistance() > -12.0) { //back up from peg
+					theX = 0;
+					theY = 1;
+					theRot = 0;
+			
+
+				} else {
+					theX = 0;
+					theY = 0;
+					theRot = 0;
+					time.reset();
+					state++;
+				}
+				break;
+			case 9:
 				popIn.set(true);//retract pistons
 				popOut.set(false);
+				state++;
+				break;
+			case 10:
+				
+				theX = 0;
+				theY = 0;
+				theRot = 0;
+				myGyro.reset();
+				
+				encFR.reset();
+				encFL.reset();
+				encRR.reset();
+				encRL.reset();
+				myGyroHeading = 0;
 				
 				break;
 		}
